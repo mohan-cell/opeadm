@@ -67,11 +67,11 @@
                 </table>
             </div>
 
-            <!-- FIXED: ADDED ACTION COLUMN FOR RESET BUTTON -->
+            <!-- FIXED: REMOVED ACTION COLUMN -->
             <div id="tab-users" style="display:none;" class="card">
                 <h3>My Customer Devices</h3>
                 <table>
-                    <thead><tr><th>Coupon Redeemed</th><th>Current Tier</th><th>Status</th><th>Expiry</th><th>Action</th></tr></thead>
+                    <thead><tr><th>Coupon Redeemed</th><th>Current Tier</th><th>Status</th><th>Expiry</th></tr></thead>
                     <tbody id="userTable"></tbody>
                 </table>
             </div>
@@ -131,35 +131,20 @@
                 .map(id => coupons.data.find(c => c.redeemed_by?.id === id));
 
             const now = new Date();
+            
+            // FIXED: REMOVED RESET BUTTON FROM RENDER
             document.getElementById('userTable').innerHTML = uniqueUsers.map(c => {
                 const u = c.redeemed_by;
                 const active = new Date(u.expiry_date) > now;
-                
-                // ADDED: The Reset Lock Button
                 return `<tr>
                     <td>${c.code}</td>
                     <td>${u.current_tier}</td>
                     <td><span class="badge ${active?'active':'expired'}">${active?'Active':'Expired'}</span></td>
                     <td>${new Date(u.expiry_date).toLocaleDateString()}</td>
-                    <td><button class="btn btn-primary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="resetLock('${c.code}')">Reset Lock</button></td>
                 </tr>`;
             }).join('');
             
             document.getElementById('ledgerTable').innerHTML = ledger.data.map(l => `<tr><td>${new Date(l.created_at).toLocaleDateString()}</td><td>${l.action_type}</td><td style="color:var(--danger)">-₹${l.amount}</td></tr>`).join('');
-        }
-
-        // ADDED: Reset Lock Function
-        async function resetLock(code) {
-            if(!confirm(`Are you sure you want to reset the device lock for ${code}?\nThe user will need to type this code again to log in.`)) return;
-            
-            const { data, error } = await client.rpc('reset_device_lock', { p_operator_id: device.id, p_code: code });
-            
-            if (error || !data.success) {
-                alert(error?.message || data.error);
-            } else { 
-                alert('Device Lock Reset Successfully! The user can now log in again, and their remaining days were saved.'); 
-                loadData(); 
-            }
         }
 
         async function generateCoupons() {
