@@ -140,3 +140,6 @@ th { color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; }
 .badge.active { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); }
 .badge.redeemed { background: rgba(161, 161, 170, 0.15); color: var(--text-muted); border: 1px solid rgba(161, 161, 170, 0.3); }
 .badge.expired { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+#tPrm, label[for="tPrm"] {
+    display: none !important;
+}
