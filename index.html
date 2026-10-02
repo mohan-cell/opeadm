@@ -99,17 +99,23 @@
         .green-header {
             background: linear-gradient(135deg, #15803d 0%, #166534 100%);
             border-radius: 14px;
-            padding: 1.4rem 2rem;
+            padding: 1.4rem 1.8rem;
             display: flex;
+            flex-wrap: wrap; 
+            gap: 1.2rem;
             justify-content: space-between;
-            align-items: center;
             box-shadow: 0 8px 24px rgba(22, 101, 52, 0.28);
             margin-bottom: 1.6rem;
             max-width: 720px;
         }
 
+        .stat-box {
+            flex: 1 1 30%;
+            min-width: 120px;
+        }
+
         .stat-box h4 {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.8px;
             opacity: 0.85;
@@ -118,7 +124,7 @@
         }
 
         .stat-box h2 {
-            font-size: 2.1rem;
+            font-size: 1.8rem;
             font-weight: 700;
             letter-spacing: -0.5px;
         }
@@ -180,8 +186,8 @@
             font-weight: 600;
             text-transform: capitalize;
         }
-        .badge.Active, .badge.active, .badge.Running { background: rgba(34, 197, 94, 0.12); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.28); }
-        .badge.Redeemed, .badge.redeemed { background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2); }
+        .badge.Active, .badge.active, .badge.Running, .badge.Unused { background: rgba(34, 197, 94, 0.12); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.28); }
+        .badge.Redeemed, .badge.redeemed, .badge.Used { background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2); }
         .badge.Expired, .badge.expired { background: rgba(239, 68, 68, 0.12); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.28); }
 
         .btn-export {
@@ -263,12 +269,17 @@
         </aside>
         
         <main class="main-content">
+
             <div class="green-header">
                 <div class="stat-box"><h4>AVAILABLE BALANCE</h4><h2 id="walletBalance">₹0</h2></div>
                 <div class="stat-box"><h4>TOTAL ISSUED</h4><h2 id="totalIssued">0</h2></div>
+                <div class="stat-box"><h4>USED</h4><h2 id="statUsed">0</h2></div>
+                <div class="stat-box"><h4>UNUSED</h4><h2 id="statUnused">0</h2></div>
+                <div class="stat-box"><h4>RUNNING</h4><h2 id="statRunning">0</h2></div>
+                <div class="stat-box"><h4>EXPIRED</h4><h2 id="statExpired">0</h2></div>
             </div>
 
-            <!-- TAB 1: CREATE USER CODES -->
+
             <div id="tab-gen" class="card" style="display:none;">
                 <h3>Configure User Coupons</h3>
                 <div class="form-group">
@@ -295,7 +306,7 @@
                 <button class="btn-primary" onclick="generateCoupons()">Deduct Wallet & Generate</button>
             </div>
 
-            <!-- TAB 2: MY COUPONS -->
+
             <div id="tab-coupons" class="card">
                 <div class="card-header">
                     <h3>My Generated Coupons</h3>
@@ -314,7 +325,7 @@
                 </table>
             </div>
 
-            <!-- TAB 3: MY USERS -->
+
             <div id="tab-users" class="card" style="display:none;">
                 <div class="card-header">
                     <h3>My Customer Devices</h3>
@@ -334,7 +345,7 @@
                 </table>
             </div>
             
-            <!-- TAB 4: LEDGER -->
+
             <div id="tab-ledger" class="card" style="display:none;">
                 <div class="card-header">
                     <h3>Ledger</h3>
@@ -392,6 +403,9 @@
             document.getElementById(`tab-${tab}`).style.display = 'block'; 
             const activeMenu = document.getElementById(`menu-${tab}`);
             if (activeMenu) activeMenu.classList.add('active');
+
+
+            loadData();
         }
 
         async function loadData() {
@@ -403,26 +417,50 @@
 
             if (wallet.data) {
                 document.getElementById('walletBalance').innerText = `₹${wallet.data.available_balance}`;
-                document.getElementById('totalIssued').innerText = wallet.data.total_issued;
             }
 
             myCouponsData = coupons.data || [];
-            document.getElementById('couponTable').innerHTML = myCouponsData.map(c => `<tr>
-                <td><strong>${c.code}</strong></td>
-                <td>${c.tier}</td>
-                <td>${c.duration_days} Days</td>
-                <td><span class="badge ${c.status}">${c.status}</span></td>
-            </tr>`).join('');
+            
+            const now = new Date();
+            let runCount = 0;
+            let expCount = 0;
+
+
+            const unusedCoupons = myCouponsData.filter(c => c.status === 'active');
+            const usedCoupons = myCouponsData.filter(c => c.status !== 'active');
+            
+            usedCoupons.forEach(c => {
+                if (c.redeemed_by && new Date(c.redeemed_by.expiry_date) > now) {
+                    runCount++;
+                } else {
+                    expCount++;
+                }
+            });
+
+            document.getElementById('totalIssued').innerText = myCouponsData.length;
+            document.getElementById('statUnused').innerText = unusedCoupons.length;
+            document.getElementById('statUsed').innerText = usedCoupons.length;
+            document.getElementById('statRunning').innerText = runCount;
+            document.getElementById('statExpired').innerText = expCount;
+
+
+            document.getElementById('couponTable').innerHTML = myCouponsData.map(c => {
+                const cStatusText = c.status === 'active' ? 'Unused' : (c.status === 'redeemed' ? 'Used' : c.status);
+                return `<tr>
+                    <td><strong>${c.code}</strong></td>
+                    <td>${c.tier}</td>
+                    <td>${c.duration_days} Days</td>
+                    <td><span class="badge ${cStatusText}">${cStatusText}</span></td>
+                </tr>`;
+            }).join('');
+
 
             const uniqueUsers = Array.from(new Set(myCouponsData.filter(c => c.redeemed_by && c.redeemed_by.role === 'user').map(c => c.redeemed_by.id)))
                 .map(id => myCouponsData.find(c => c.redeemed_by?.id === id));
 
-            const now = new Date();
             document.getElementById('userTable').innerHTML = uniqueUsers.map(c => {
                 const u = c.redeemed_by;
                 const active = new Date(u.expiry_date) > now;
-                
-                // Show "Running" instead of "Active"
                 const statusText = active ? 'Running' : 'Expired';
                 const dispName = u.customer_name ? u.customer_name : '<span style="color:#64748b; font-size:0.8rem;">Not Set</span>';
 
@@ -439,6 +477,7 @@
                 </tr>`;
             }).join('');
             
+
             document.getElementById('ledgerTable').innerHTML = (ledger.data || []).map(l => `<tr>
                 <td>${new Date(l.created_at).toLocaleDateString()}</td>
                 <td>${l.action_type}</td>
@@ -466,7 +505,7 @@
 
         async function setCustomerName(targetDeviceId, code, currentName) {
             const newName = prompt(`Enter Customer Name or Phone for coupon ${code}:`, currentName);
-            if (newName === null) return; // Operator clicked cancel
+            if (newName === null) return; 
 
             const { data, error } = await client.rpc('operator_set_customer_name', {
                 p_reseller_id: device.id,
@@ -477,7 +516,7 @@
             if (error || !data.success) {
                 alert(error?.message || data.error);
             } else {
-                loadData(); // Refresh table to show the new name instantly
+                loadData(); 
             }
         }
 
@@ -493,7 +532,10 @@
         function exportResellerCSV() {
             if (myCouponsData.length === 0) return alert("You have no coupons to export.");
             let csvContent = "Coupon Code,Tier,Duration (Days),Status,Creation Date\n";
-            myCouponsData.forEach(c => csvContent += `"${c.code}","${c.tier}","${c.duration_days}","${c.status}","${new Date(c.created_at).toLocaleDateString()}"\n`);
+            myCouponsData.forEach(c => {
+                const displayStatus = c.status === 'active' ? 'Unused' : 'Used';
+                csvContent += `"${c.code}","${c.tier}","${c.duration_days}","${displayStatus}","${new Date(c.created_at).toLocaleDateString()}"\n`;
+            });
             const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }));
             link.download = `User_Coupons.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
