@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=1000, initial-scale=0.38, minimum-scale=0.25, maximum-scale=3.0, user-scalable=yes">
+
+    <meta id="viewportMeta" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Operator Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -12,8 +13,7 @@
             background-color: #0b0c0e; 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             color: #f1f5f9; 
-            min-width: 1000px;
-            overflow-x: auto;
+
         }
 
         .dashboard { 
@@ -247,7 +247,7 @@
 </head>
 <body>
     <div id="authSection" style="display:flex; justify-content:center; align-items:center; min-height:100vh;">
-        <div class="card" style="width: 360px; text-align:center;">
+        <div class="card" style="width: 360px; margin: 0 20px; text-align:center;">
             <h2 style="color:#22c55e; margin-bottom:1rem; font-size:1.4rem;">Operator Login</h2>
             <div class="form-group" style="margin-bottom:1.2rem;">
                 <input type="text" id="activationCode" placeholder="RES-XXXXXXXX" style="text-align:center;">
@@ -269,7 +269,6 @@
         </aside>
         
         <main class="main-content">
-
             <div class="green-header">
                 <div class="stat-box"><h4>AVAILABLE BALANCE</h4><h2 id="walletBalance">₹0</h2></div>
                 <div class="stat-box"><h4>TOTAL ISSUED</h4><h2 id="totalIssued">0</h2></div>
@@ -278,7 +277,6 @@
                 <div class="stat-box"><h4>RUNNING</h4><h2 id="statRunning">0</h2></div>
                 <div class="stat-box"><h4>EXPIRED</h4><h2 id="statExpired">0</h2></div>
             </div>
-
 
             <div id="tab-gen" class="card" style="display:none;">
                 <h3>Configure User Coupons</h3>
@@ -306,58 +304,33 @@
                 <button class="btn-primary" onclick="generateCoupons()">Deduct Wallet & Generate</button>
             </div>
 
-
             <div id="tab-coupons" class="card">
                 <div class="card-header">
                     <h3>My Generated Coupons</h3>
                     <button class="btn-export" onclick="exportResellerCSV()">Export CSV</button>
                 </div>
                 <table>
-                    <thead>
-                        <tr>
-                            <th>CODE</th>
-                            <th>TIER</th>
-                            <th>DURATION</th>
-                            <th>STATUS</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>CODE</th><th>TIER</th><th>DURATION</th><th>STATUS</th></tr></thead>
                     <tbody id="couponTable"></tbody>
                 </table>
             </div>
-
 
             <div id="tab-users" class="card" style="display:none;">
                 <div class="card-header">
                     <h3>My Customer Devices</h3>
                 </div>
                 <table>
-                    <thead>
-                        <tr>
-                            <th>COUPON REDEEMED</th>
-                            <th>CUSTOMER</th>
-                            <th>CURRENT TIER</th>
-                            <th>STATUS</th>
-                            <th>EXPIRY</th>
-                            <th>ACTION</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>COUPON REDEEMED</th><th>CUSTOMER</th><th>CURRENT TIER</th><th>STATUS</th><th>EXPIRY</th><th>ACTION</th></tr></thead>
                     <tbody id="userTable"></tbody>
                 </table>
             </div>
             
-
             <div id="tab-ledger" class="card" style="display:none;">
                 <div class="card-header">
                     <h3>Ledger</h3>
                 </div>
                 <table>
-                    <thead>
-                        <tr>
-                            <th>DATE</th>
-                            <th>ACTION</th>
-                            <th>AMOUNT DEDUCTED</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>DATE</th><th>ACTION</th><th>AMOUNT DEDUCTED</th></tr></thead>
                     <tbody id="ledgerTable"></tbody>
                 </table>
             </div>
@@ -388,6 +361,11 @@
 
         function checkAccess() {
             if (device.role === 'reseller') { 
+
+                document.getElementById('viewportMeta').setAttribute('content', 'width=1000, initial-scale=0.38, minimum-scale=0.25, maximum-scale=3.0, user-scalable=yes');
+                document.body.style.minWidth = '1000px';
+                document.body.style.overflowX = 'auto';
+
                 document.getElementById('authSection').style.display = 'none'; 
                 document.getElementById('appSection').style.display = 'flex'; 
                 loadData(); 
@@ -403,7 +381,6 @@
             document.getElementById(`tab-${tab}`).style.display = 'block'; 
             const activeMenu = document.getElementById(`menu-${tab}`);
             if (activeMenu) activeMenu.classList.add('active');
-
 
             loadData();
         }
@@ -425,7 +402,6 @@
             let runCount = 0;
             let expCount = 0;
 
-
             const unusedCoupons = myCouponsData.filter(c => c.status === 'active');
             const usedCoupons = myCouponsData.filter(c => c.status !== 'active');
             
@@ -443,7 +419,6 @@
             document.getElementById('statRunning').innerText = runCount;
             document.getElementById('statExpired').innerText = expCount;
 
-
             document.getElementById('couponTable').innerHTML = myCouponsData.map(c => {
                 const cStatusText = c.status === 'active' ? 'Unused' : (c.status === 'redeemed' ? 'Used' : c.status);
                 return `<tr>
@@ -453,7 +428,6 @@
                     <td><span class="badge ${cStatusText}">${cStatusText}</span></td>
                 </tr>`;
             }).join('');
-
 
             const uniqueUsers = Array.from(new Set(myCouponsData.filter(c => c.redeemed_by && c.redeemed_by.role === 'user').map(c => c.redeemed_by.id)))
                 .map(id => myCouponsData.find(c => c.redeemed_by?.id === id));
@@ -477,7 +451,6 @@
                 </tr>`;
             }).join('');
             
-
             document.getElementById('ledgerTable').innerHTML = (ledger.data || []).map(l => `<tr>
                 <td>${new Date(l.created_at).toLocaleDateString()}</td>
                 <td>${l.action_type}</td>
